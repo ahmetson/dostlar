@@ -1,0 +1,7 @@
+{
+  "description": "Medet Ahmetson's friend gift.",
+  "external_url": "http://localhost:3000/gift/byName=alex",
+  "image": "http://localhost:3000/meta/alex.jpg",
+  "name": "Alex Chan's Gift",
+  "attributes": []
+}
