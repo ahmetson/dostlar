@@ -1,8 +1,18 @@
-# Nexth
+# Friends
 
-A Next.js + Ethereum starter kit with Viem, Wagmi, Web3Modal, SIWE, Tailwind, daisyUI and more to quickly ship production-ready Web3 Apps ⚡
+> A Next.js + Ethereum starter kit with Viem, Wagmi, Web3Modal, SIWE, Tailwind, daisyUI and more to quickly ship production-ready Web3 Apps ⚡
 
-![Nexth Readme Image](https://nexth.vercel.app/opengraph-image)
+If you are Medet's friend, go to [Friend.Turkmenson.com](https://friend.turkmenson.com/)
+
+## Todo
+
+- Deploy the NFT
+- Create NFT page
+- When connecting wallet redirect to NFT page
+- Show the NFT parameters
+- Add confetting when clicking to button
+
+---
 
 ## Packages 📦
 

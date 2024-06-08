@@ -4,7 +4,10 @@ import { LinkComponent } from './LinkComponent'
 
 interface ListItemType {
   title: string
-  description: string
+  description1: string
+  description2: string
+  description3: string
+  description4: string
   image: string
   url?: string
 }
@@ -47,7 +50,17 @@ export function CardList(props: Props) {
                   </LinkComponent>
                 )}
                 {!i.url && <h4 className='card-title'>{i.title}</h4>}
-                <p>{i.description}</p>
+                <p>
+                  {i.description1}
+                  <br />
+                  {i.description2}
+                </p>
+                <br></br>
+                <p>
+                  {i.description3}
+                  <br />
+                  {i.description4}
+                </p>
               </div>
             </div>
           )
