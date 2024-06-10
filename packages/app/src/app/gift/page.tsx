@@ -9,6 +9,7 @@ import { AddressInput } from '@/components/AddressInput'
 import SizedConfetti from 'react-confetti'
 import Image from 'next/image'
 import { useWindowSize } from 'react-use'
+import { redirect, useSearchParams } from 'next/navigation'
 
 type Address = `0x${string}` | undefined
 type Meta = {
@@ -43,10 +44,21 @@ export default function SendToken() {
   const [isValidToAddress, setIsValidToAddress] = useState<boolean>(false)
   const [rewardAmount, setRewardAmount] = useState<string>('0.0')
   const [runConffetti, setRunConfetti] = useState<boolean>(false)
+  const searchParams = useSearchParams()
+
+  let queryOwner = searchParams.get('byAddress')
+  if (queryOwner == null || !isAddress(queryOwner)) {
+    redirect('/')
+  }
+  const address: Address = queryOwner as Address
+  if (to == undefined) {
+    setIsValidToAddress(true)
+    setTo(address)
+  }
 
   const { Add } = useNotifications()
 
-  const { address, chain } = useAccount()
+  const { chain } = useAccount()
 
   const { data: tokenId } = useReadContract({
     query: {
@@ -114,13 +126,6 @@ export default function SendToken() {
         setRewardAmount(usdPrice.toFixed(4))
       })
   }, [defaultReward, additional])
-
-  useEffect(() => {
-    if (to == undefined) {
-      setIsValidToAddress(true)
-      setTo(address)
-    }
-  }, [address])
 
   const { error: estimateError } = useSimulateContract({
     query: {
