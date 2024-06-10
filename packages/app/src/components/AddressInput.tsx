@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { isAddress } from 'viem'
 import Image from 'next/image'
 import useEnsProfile from '@/app/hooks/useEnsProfile'
@@ -11,7 +11,12 @@ interface AddressInputProps extends React.HTMLProps<HTMLInputElement> {
   disabled?: boolean
 }
 
-export const AddressInput = ({ onRecipientChange, onRawInputChange, disabled = false }: AddressInputProps) => {
+export const AddressInput = ({
+  onRecipientChange,
+  onRawInputChange,
+  disabled = false,
+  value: defaultValue,
+}: AddressInputProps) => {
   const [isValidToAddress, setIsValidToAddress] = useState<boolean>(false)
   const [rawTokenAddress, setRawTokenAddress] = useState<string>('')
   const { ensAddress: ensAddy, ensAvatar } = useEnsProfile({ ensName: rawTokenAddress })
@@ -30,6 +35,12 @@ export const AddressInput = ({ onRecipientChange, onRawInputChange, disabled = f
       onRawInputChange(_to)
     }
   }
+
+  useEffect(() => {
+    if (defaultValue !== undefined && rawTokenAddress.length == 0) {
+      setRawTokenAddress(defaultValue as string)
+    }
+  }, [defaultValue])
 
   return (
     <div

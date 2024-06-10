@@ -4,8 +4,7 @@
   "license": "MIT",
   "scripts": {
     "build": "hardhat compile",
-    "deploy": "npx hardhat ignition deploy ./ignition/modules/Message.ts --verify --deployment-id message",
-    "deploy:nft": "npx hardhat ignition deploy ./ignition/modules/NFT.ts",
+    "deploy": "npx hardhat ignition deploy ./ignition/modules/NFT.ts --verify",
     "verify": "npx hardhat verify",
     "coverage": "SOLIDITY_COVERAGE=true npx hardhat coverage",
     "test": "REPORT_GAS=true hardhat test"

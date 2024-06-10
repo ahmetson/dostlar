@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import {ERC721Enumerable, ERC721, IERC721} from '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
@@ -20,7 +20,7 @@ import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/V
  * 7. If NFT exists, then add increase the reward.
  * 8. If NFT doesn't exist, then mint NFT
  */
-contract FriendNFT is ERC721, VRFConsumerBaseV2Plus {
+contract FriendNFT is ERC721Enumerable, VRFConsumerBaseV2Plus {
   event RequestSent(uint256 requestId, uint32 numWords);
   event RequestFulfilled(uint256 requestId, uint256[] randomWords);
 
@@ -40,7 +40,7 @@ contract FriendNFT is ERC721, VRFConsumerBaseV2Plus {
 
   bytes32 public keyHash;
 
-  uint32 public callbackGasLimit = 100000;
+  uint32 public callbackGasLimit = 300000;
   uint16 public requestConfirmations = 3;
   uint32 public numWords = 1;
 
@@ -68,7 +68,7 @@ contract FriendNFT is ERC721, VRFConsumerBaseV2Plus {
   }
 
   modifier onlyMedet() {
-    require(msg.sender == medet, "you are not medet");
+    require(msg.sender == medet, "you are not Medet");
     _;
   }
 
@@ -79,7 +79,7 @@ contract FriendNFT is ERC721, VRFConsumerBaseV2Plus {
    * Testnet coordinator_ is 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B.
    */
   constructor(uint256 default_, address coordinator_) 
-    ERC721("Medet's Friend", "FRIEND") 
+    ERC721("Medets Friend", "FRIEND") 
     VRFConsumerBaseV2Plus(coordinator_)
   {
     defaultReward = default_;
@@ -114,8 +114,8 @@ contract FriendNFT is ERC721, VRFConsumerBaseV2Plus {
    */
   function presentGift(address to, string memory tokenUri) public onlyMedet {
     if (friends[to] == 0) {
-      uint256 tokenId = _tokenIdCounter;
       _tokenIdCounter += 1;
+      uint256 tokenId = _tokenIdCounter;
       _safeMint(to, tokenId);
       friends[to] = tokenId;
       tokenUris[tokenId] = tokenUri;
@@ -142,11 +142,11 @@ contract FriendNFT is ERC721, VRFConsumerBaseV2Plus {
     defaultReward = default_;
   }
 
-  function transferFrom(address from, address to, uint256 tokenId) public override notBurning(tokenId) {
+  function transferFrom(address from, address to, uint256 tokenId) public override(ERC721, IERC721) notBurning(tokenId) {
     super.transferFrom(from, to, tokenId);
   }
 
-  function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override notBurning(tokenId) {
+  function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory data) public override(ERC721, IERC721) notBurning(tokenId) {
     super.safeTransferFrom(from, to, tokenId, data);
   }
 
