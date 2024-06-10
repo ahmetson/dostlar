@@ -10,7 +10,6 @@ export const POEM_ITEMS = [
     description3: `Baş bile barsam aňa, handan olursa güzeri,`,
     description4: `Tutsam ol ýerde watan, ol ýer ki anyň ýoludyr.`,
     image: TmFlag.src,
-    url: '/examples/send-ether',
   },
   {
     title: 'Мир конечен',
@@ -19,7 +18,6 @@ export const POEM_ITEMS = [
     description3: `Если я пойду c тобой, почему бы и нет?`,
     description4: `Если я так понимаю, это родина, это место, по которому он идет.`,
     image: RuFlag.src,
-    url: '/examples/send-token',
   },
   {
     title: 'The world is finite',
@@ -28,6 +26,5 @@ export const POEM_ITEMS = [
     description3: `If I go with you, why not?`,
     description4: `If I take it there is the homeland, that is the place that is his way.`,
     image: UkFlag.src,
-    url: '/examples/notifications',
   },
 ]

@@ -1,6 +1,5 @@
 import React from 'react'
 import Image from 'next/image'
-import { LinkComponent } from './LinkComponent'
 
 interface ListItemType {
   title: string
@@ -9,7 +8,6 @@ interface ListItemType {
   description3: string
   description4: string
   image: string
-  url?: string
 }
 
 interface Props {
@@ -44,12 +42,7 @@ export function CardList(props: Props) {
                 </figure>
               </div>
               <div className='py-8'>
-                {i.url && (
-                  <LinkComponent href={i.url}>
-                    <h4 className='card-title mb-4'>{i.title}</h4>
-                  </LinkComponent>
-                )}
-                {!i.url && <h4 className='card-title'>{i.title}</h4>}
+                <h4 className='card-title'>{i.title}</h4>
                 <p>
                   {i.description1}
                   <br />
