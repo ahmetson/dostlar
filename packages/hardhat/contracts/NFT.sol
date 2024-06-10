@@ -9,25 +9,13 @@ import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/V
  * @title FriendNFT is the gift to your friends
  * @author Medet Ahmetson <milayter@gmail.com>
  * @notice Use the Chainlink random numbers to produce random numbers and then reward users with the random tokens
- * 
- * @dev Algorithm:
- * 1. Mint NFT for your friend with the image URL.
- * 2. Make sure that we can change the URL of the image later on.
- * 3. Make the JSON file of the pictures by Opensea format.
- * 4. Approve the smartcontract to use my account.
- * 5. Salut when burning the token.
- * 6. Only one NFT per account.
- * 7. If NFT exists, then add increase the reward.
- * 8. If NFT doesn't exist, then mint NFT
  */
 contract FriendNFT is ERC721Enumerable, VRFConsumerBaseV2Plus {
   event RequestSent(uint256 requestId, uint32 numWords);
   event RequestFulfilled(uint256 requestId, uint256[] randomWords);
 
   struct RequestStatus {
-    bool fulfilled; // whether the request has been successfully fulfilled
     bool exists; // whether a requestId exists
-    uint256[] randomWords;
     uint256 tokenId;
     address to;
   }
@@ -120,6 +108,7 @@ contract FriendNFT is ERC721Enumerable, VRFConsumerBaseV2Plus {
       friends[to] = tokenId;
       tokenUris[tokenId] = tokenUri;
     } else {
+      require(burnRequests[friends[to]] == 0, "burning token");
       additional[friends[to]]++;
     }
     totalReward++;
@@ -175,9 +164,7 @@ contract FriendNFT is ERC721Enumerable, VRFConsumerBaseV2Plus {
     );
     
     s_requests[requestId] = RequestStatus({
-      randomWords: new uint256[](0),
       exists: true,
-      fulfilled: false,
       tokenId: tokenId,
       to: to
     });
@@ -193,14 +180,13 @@ contract FriendNFT is ERC721Enumerable, VRFConsumerBaseV2Plus {
         uint256[] calldata _randomWords
   ) internal override {
         require(s_requests[_requestId].exists, "request not found");
-        s_requests[_requestId].fulfilled = true;
-        s_requests[_requestId].randomWords = _randomWords;
-
+        
         // Make sure the token is burnt and tokens are given to the user.
         uint256 tokenId = s_requests[_requestId].tokenId;
         address to = s_requests[_requestId].to;
 
         delete burnRequests[tokenId];
+        delete s_requests[_requestId];
 
         uint256 rewardAmount = 1 + additional[tokenId];
         totalReward -= rewardAmount;
@@ -220,12 +206,8 @@ contract FriendNFT is ERC721Enumerable, VRFConsumerBaseV2Plus {
         emit RequestFulfilled(_requestId, _randomWords);
   }
 
-  function getRequestStatus(
-        uint256 _requestId
-  ) external view returns (bool fulfilled, uint256[] memory randomWords) {
-      require(s_requests[_requestId].exists, "request not found");
-      RequestStatus memory request = s_requests[_requestId];
-      return (request.fulfilled, request.randomWords);
+  function withdrawFunds() external onlyMedet {
+    payable(msg.sender).transfer(address(this).balance);
   }
 
   receive() external payable {}
