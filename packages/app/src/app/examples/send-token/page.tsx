@@ -7,7 +7,7 @@ import {
   useWaitForTransactionReceipt,
   useReadContract,
 } from 'wagmi'
-import { isAddress } from 'viem'
+import { formatEther, isAddress, parseEther, parseUnits } from 'viem'
 import erc721Abi from '@/utils/erc721'
 import { useState, useEffect } from 'react'
 // import { parseEther } from 'viem'
@@ -30,6 +30,12 @@ type Meta = {
   attributes?: any
 }
 
+type EthPrice = {
+  ethereum: {
+    usd: number
+  }
+}
+
 const loadingMeta: Meta = {
   description: '',
   external_url: 'https://friend.turkmenson.com/gift',
@@ -43,6 +49,7 @@ export default function SendToken() {
   const tokenAddress = process.env.NEXT_PUBLIC_FRIEND_NFT_ADDRESS! as Address
   const [nftMeta, setNftMeta] = useState<Meta>(loadingMeta)
   const [isValidToAddress, setIsValidToAddress] = useState<boolean>(false)
+  const [rewardAmount, setRewardAmount] = useState<number>(0)
 
   const { Add } = useNotifications()
 
@@ -68,6 +75,23 @@ export default function SendToken() {
     args: [tokenId],
   })
 
+  const { data: defaultReward } = useReadContract({
+    address: tokenAddress,
+    abi: erc721Abi,
+    functionName: 'defaultReward',
+    args: [],
+  })
+
+  const { data: additional } = useReadContract({
+    query: {
+      enabled: tokenId != undefined && String(tokenId).length > 0,
+    },
+    address: tokenAddress,
+    abi: erc721Abi,
+    functionName: 'additional',
+    args: [tokenId],
+  })
+
   useEffect(() => {
     if (tokenURI == undefined) {
       return
@@ -85,18 +109,26 @@ export default function SendToken() {
   }, [tokenURI])
 
   useEffect(() => {
-    console.log(
-      `State of address was changed, is it undefined? ${address == undefined}, is to undefined? ${to == undefined}`
-    )
+    if (defaultReward == undefined || additional == undefined) {
+      return
+    }
+    fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')
+      .then((res) => {
+        return res.json()
+      })
+      .then((data) => {
+        let totalEth = parseFloat(formatEther(defaultReward as bigint)) * (Number(additional) + 1)
+        var price = data as EthPrice
+        setRewardAmount(price.ethereum.usd * totalEth)
+      })
+  }, [defaultReward, additional])
+
+  useEffect(() => {
     if (to == undefined) {
       setIsValidToAddress(true)
       setTo(address)
     }
   }, [address])
-
-  console.log(`Address: ${address}`)
-  console.log(`User's first tokenID: ${tokenId}, Enable token ID fetching? ${address != undefined}`)
-  console.log(`tokenURI: ${tokenURI}, Enable token URI fetching? ${tokenId != undefined && String(tokenId).length > 0}`)
 
   const { error: estimateError } = useSimulateContract({
     address: isValidToAddress ? tokenAddress : undefined,
@@ -129,12 +161,6 @@ export default function SendToken() {
       args: [address!, to!, BigInt(1)],
     })
   }
-
-  /*const handleTokenAddressInput = (token: string) => {
-    if (token.startsWith('0x')) setTokenAddress(token as `0x${string}`)
-    else setTokenAddress(`0x${token}`)
-    setIsValidTokenAddress(isAddress(token))
-  }*/
 
   const handleToAdressInput = (to: string) => {
     console.log(`HandleToAddressInput`)
@@ -169,6 +195,13 @@ export default function SendToken() {
         <div className='card-body items-center text-center'>
           <h2 className='card-title'>{nftMeta.name}</h2>
           <p>Burn your NFT to win a reward</p>
+          {additional == undefined ? (
+            ''
+          ) : (
+            <p>
+              Up to {parseFloat(formatEther(defaultReward as bigint)) * (Number(additional) + 1)} ETH ({rewardAmount}$)
+            </p>
+          )}
           <div className='card-actions'>
             <label className='form-control w-full max-w-xs'>
               <div className='label py-2'>
