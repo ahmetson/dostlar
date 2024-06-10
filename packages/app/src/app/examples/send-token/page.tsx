@@ -1,23 +1,14 @@
 'use client'
-import {
-  useAccount,
-  useBalance,
-  useSimulateContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-  useReadContract,
-} from 'wagmi'
-import { formatEther, isAddress, parseEther, parseUnits } from 'viem'
+import { useAccount, useSimulateContract, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { formatEther, isAddress } from 'viem'
 import erc721Abi from '@/utils/erc721'
 import { useState, useEffect } from 'react'
 // import { parseEther } from 'viem'
 import { useNotifications } from '@/context/Notifications'
-import Token from '@/assets/icons/token.png'
 import { AddressInput } from '@/components/AddressInput'
-import { TokenBalance } from '@/components/TokenBalance'
-import { TokenQuantityInput } from '@/components/TokenQuantityInput'
-import { formatBalance } from '@/utils/formatBalance'
+import SizedConfetti from 'react-confetti'
 import Image from 'next/image'
+import { useWindowSize } from 'react-use'
 
 type Address = `0x${string}` | undefined
 type Meta = {
@@ -40,16 +31,18 @@ const loadingMeta: Meta = {
   description: '',
   external_url: 'https://friend.turkmenson.com/gift',
   image: '',
-  name: 'NFT is loading...',
+  name: 'No NFT',
   attributes: [],
 }
 
 export default function SendToken() {
+  const { width, height } = useWindowSize()
   const [to, setTo] = useState<Address>(undefined)
   const tokenAddress = process.env.NEXT_PUBLIC_FRIEND_NFT_ADDRESS! as Address
   const [nftMeta, setNftMeta] = useState<Meta>(loadingMeta)
   const [isValidToAddress, setIsValidToAddress] = useState<boolean>(false)
-  const [rewardAmount, setRewardAmount] = useState<number>(0)
+  const [rewardAmount, setRewardAmount] = useState<string>('0.0')
+  const [runConffetti, setRunConfetti] = useState<boolean>(false)
 
   const { Add } = useNotifications()
 
@@ -96,13 +89,11 @@ export default function SendToken() {
     if (tokenURI == undefined) {
       return
     }
-    console.log(`Fetching ... ${tokenURI}`)
     fetch(String(tokenURI))
       .then((res) => {
         return res.json()
       })
       .then((data) => {
-        console.log(data)
         var meta = data as Meta
         setNftMeta(meta)
       })
@@ -119,7 +110,8 @@ export default function SendToken() {
       .then((data) => {
         let totalEth = parseFloat(formatEther(defaultReward as bigint)) * (Number(additional) + 1)
         var price = data as EthPrice
-        setRewardAmount(price.ethereum.usd * totalEth)
+        var usdPrice = price.ethereum.usd * totalEth
+        setRewardAmount(usdPrice.toFixed(4))
       })
   }, [defaultReward, additional])
 
@@ -131,10 +123,13 @@ export default function SendToken() {
   }, [address])
 
   const { error: estimateError } = useSimulateContract({
+    query: {
+      enabled: tokenId !== undefined && to != undefined,
+    },
     address: isValidToAddress ? tokenAddress : undefined,
     abi: erc721Abi,
-    functionName: 'safeTransferFrom',
-    args: [address!, to!, BigInt(1)],
+    functionName: 'burn',
+    args: [tokenId, to!],
   })
 
   const { data, writeContract } = useWriteContract()
@@ -157,13 +152,12 @@ export default function SendToken() {
     writeContract({
       address: tokenAddress!,
       abi: erc721Abi,
-      functionName: 'safeTransferFrom',
-      args: [address!, to!, BigInt(1)],
+      functionName: 'burn',
+      args: [tokenId, to!],
     })
   }
 
   const handleToAdressInput = (to: string) => {
-    console.log(`HandleToAddressInput`)
     if (to.startsWith('0x')) setTo(to as `0x${string}`)
     else setTo(`0x${to}`)
     setIsValidToAddress(isAddress(to))
@@ -175,6 +169,13 @@ export default function SendToken() {
         type: 'success',
         href: chain?.blockExplorers?.default.url ? `${chain.blockExplorers.default.url}/tx/${data}` : undefined,
       })
+
+      setRunConfetti(true)
+
+      let sucessModal = document.getElementById('successModal')
+      ;(sucessModal as any).showModal()
+
+      setNftMeta(loadingMeta)
     } else if (txError) {
       Add(`Transaction failed: ${txError.cause}`, {
         type: 'error',
@@ -183,48 +184,77 @@ export default function SendToken() {
   }, [txSuccess, txError])
 
   return (
-    <div className='flex justify-center'>
-      <div className='card w-96 bg-base-100 shadow-xl'>
-        <figure className='px-10 pt-10'>
-          {nftMeta.description.length == 0 ? (
-            <div className='skeleton w-32 h-32'></div>
-          ) : (
-            <Image src={nftMeta.image} width={500} height={500} alt={nftMeta.name} style={{ display: 'inline' }} />
-          )}
-        </figure>
-        <div className='card-body items-center text-center'>
-          <h2 className='card-title'>{nftMeta.name}</h2>
-          <p>Burn your NFT to win a reward</p>
-          {additional == undefined ? (
-            ''
-          ) : (
-            <p>
-              Up to {parseFloat(formatEther(defaultReward as bigint)) * (Number(additional) + 1)} ETH ({rewardAmount}$)
-            </p>
-          )}
-          <div className='card-actions'>
-            <label className='form-control w-full max-w-xs'>
-              <div className='label py-2'>
-                <span className='label-text'>Recipient address</span>
-              </div>
-              <AddressInput
-                onRecipientChange={handleToAdressInput}
-                type='text'
-                className={`input input-bordered w-full max-w-xs ${
-                  !isValidToAddress && to != undefined ? 'input-error' : ''
-                }`}
-                value={to}
-              />
-            </label>
-            <button
-              className='btn btn-wide btn-primary w-[100%] mt-1'
-              onClick={handleSendTransation}
-              disabled={!tokenId || !isValidToAddress || !address || Boolean(estimateError)}>
-              {isLoading ? <span className='loading loading-dots loading-sm'></span> : 'Get your Tokens'}
-            </button>
+    <>
+      <div className='flex justify-center'>
+        <div className='card w-96 bg-base-100 shadow-xl'>
+          <figure className='px-10 pt-10'>
+            {nftMeta.description.length == 0 ? (
+              <div className='skeleton w-32 h-32'></div>
+            ) : (
+              <Image src={nftMeta.image} width={500} height={500} alt={nftMeta.name} style={{ display: 'inline' }} />
+            )}
+          </figure>
+          <div className='card-body items-center text-center'>
+            <h2 className='card-title'>{nftMeta.name}</h2>
+            <p>Burn your NFT to win a reward</p>
+            {additional == undefined ? (
+              ''
+            ) : (
+              <p>
+                Up to {parseFloat(formatEther(defaultReward as bigint)) * (Number(additional) + 1)} ETH ({rewardAmount}
+                $)
+              </p>
+            )}
+            <div className='card-actions'>
+              <label className='form-control w-full max-w-xs'>
+                <div className='label py-2'>
+                  <span className='label-text'>Recipient address</span>
+                </div>
+                <AddressInput
+                  onRecipientChange={handleToAdressInput}
+                  type='text'
+                  className={`input input-bordered w-full max-w-xs ${
+                    !isValidToAddress && to != undefined ? 'input-error' : ''
+                  }`}
+                  value={to}
+                />
+              </label>
+              <button
+                className='btn btn-wide btn-primary w-[100%] mt-1'
+                onClick={handleSendTransation}
+                disabled={!tokenId || !isValidToAddress || !address || Boolean(estimateError)}>
+                {isLoading ? <span className='loading loading-dots loading-sm'></span> : 'Get your Tokens'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      {width && height && runConffetti ? (
+        <SizedConfetti
+          className='absolute'
+          id='confetti'
+          width={width}
+          height={height}
+          run={runConffetti}
+          recycle={false}
+          numberOfPieces={250}
+          wind={0}
+          gravity={0.1}
+          opacity={100}></SizedConfetti>
+      ) : (
+        ' '
+      )}
+      <dialog id='successModal' className='modal'>
+        <div className='modal-box'>
+          <h3 className='font-bold text-lg'>Close the page!</h3>
+          <p className='py-4'>You tokens will appear in your account in a short period of time</p>
+          <div className='modal-action'>
+            <form method='dialog'>
+              <button className='btn'>Close</button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+    </>
   )
 }
